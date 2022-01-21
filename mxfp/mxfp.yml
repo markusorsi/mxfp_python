@@ -4,7 +4,6 @@ channels:
   - defaults
 dependencies:
   - _libgcc_mutex=0.1
-  - _openmp_mutex=4.5
   - blas=1.0
   - boost=1.74.0
   - boost-cpp=1.74.0
@@ -40,16 +39,11 @@ dependencies:
   - libcblas=3.9.0
   - libdeflate=1.8
   - libffi=3.4.2
-  - libgcc-ng=11.2.0
-  - libgfortran-ng=11.2.0
-  - libgfortran5=11.2.0
   - libglib=2.70.1
-  - libgomp=11.2.0
   - libiconv=1.16
   - liblapack=3.9.0
   - libopenblas=0.3.18
   - libpng=1.6.37
-  - libstdcxx-ng=11.2.0
   - libtiff=4.3.0
   - libuuid=2.32.1
   - libwebp-base=1.2.1
@@ -102,4 +96,11 @@ dependencies:
   - xz=5.2.5
   - zlib=1.2.11
   - zstd=1.5.0
+  - pip:
+    - libstdcxx-ng==11.2.0
+    - libgfortran-ng==11.2.0
+    - _openmp_mutex==4.5
+    - libgcc-ng==11.2.0
+    - libgomp==11.2.0
+    - libgfortran5==11.2.0
 prefix: /home/markus/miniconda3/envs/mxfp
