@@ -1,11 +1,8 @@
 import numpy as np
 from math import exp
-import random
 
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdmolops
-
-random.seed(42)
+from rdkit.Chem import AllChem, rdmolops, rdchem
 
 DISTANCE_BINS = [0, 1, 2, 3, 4, 5, 6, 7.1, 8.4, 9.9, 11.6, 13.7, 16.2,
              19.1, 22.6, 26.6, 31.4, 37.1, 43.7, 51.6, 60.9, 71.8, 84.8,
@@ -32,9 +29,12 @@ for distance in range(1000):
     GAUSSROWS.append(gaussrow)
 
 
-class MXFPCalculator():
+class MXFPCalculator:
 
-    def __init__(self, distance_bins=DISTANCE_BINS, mxfp_smarts=MXFP_SMARTS, labels=LABELS, gaussrows=GAUSSROWS, dimensionality='2D'):
+    def __init__(self, dimensionality:str='2D'):
+        """
+        MXFP calculator class
+        """
         self.distance_bins = DISTANCE_BINS 
         self.mxfp_smarts = MXFP_SMARTS
         self.labels = LABELS
@@ -42,8 +42,7 @@ class MXFPCalculator():
         self.dimensionality = dimensionality
 
 
-    def get_propmat(self, mol):
-
+    def get_propmat(self, mol:'rdchem.Mol') -> np.array:
         """
         Calculates which of the pharmacophore features are attributed
         to the atoms contained in the query molecule.
@@ -52,7 +51,6 @@ class MXFPCalculator():
         molecule. The i'th element of the list contains a list of pharmacophore
         labels (str) assigned to that atom.
         """
-    
         propmat = np.zeros((len(self.labels), mol.GetNumAtoms()))
 
         for i, label in enumerate(self.labels):
@@ -67,7 +65,6 @@ class MXFPCalculator():
                 if matched: break
             
         return propmat
-
 
     def get_aplist(self, mol, property):
         """
@@ -113,7 +110,7 @@ class MXFPCalculator():
         """
 
         propmat = self.get_propmat(mol)
-        
+
         num_atoms = np.count_nonzero(propmat[property] == 1)
 
         return num_atoms
