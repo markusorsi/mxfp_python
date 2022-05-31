@@ -1,4 +1,5 @@
 debugging/
+dist/
 # Distribution / packaging
 .Python
 build/
