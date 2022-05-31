@@ -1,5 +1,6 @@
 debugging/
 dist/
+mxfp/__pycache__
 # Distribution / packaging
 .Python
 build/
