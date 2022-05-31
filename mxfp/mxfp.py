@@ -4,12 +4,13 @@ from math import exp
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdmolops, rdchem
 
+
 DISTANCE_BINS = [0, 1, 2, 3, 4, 5, 6, 7.1, 8.4, 9.9, 11.6, 13.7, 16.2,
              19.1, 22.6, 26.6, 31.4, 37.1, 43.7, 51.6, 60.9, 71.8, 84.8,
              100.0, 118, 139.3, 164.4, 193.9, 228.9, 270, 318.7]
 
 MXFP_SMARTS = {
-'HAT' : ['[*]'],
+'HAC' : ['[*]'],
 'HYD' : ['[C]', '[a]', '[S]'],
 'ARO' : ['[a]'],
 'HBA' : ['[!$([#6,F,Cl,Br,I,o,s,nX3,#7v5,#15v5,#16v4,#16v6,*+1,*+2,*+3])]'],
@@ -20,134 +21,263 @@ MXFP_SMARTS = {
 
 LABELS = MXFP_SMARTS.keys()
 
-GAUSSROWS = []
-for distance in range(1000):
-    if distance == 0:
-        gaussrow = [exp(-0.5*(((distance_bin)/(0.09))**2)) for distance_bin in DISTANCE_BINS]
-    else:
-        gaussrow = [exp(-0.5*(((distance_bin-distance)/(distance*0.09))**2)) for distance_bin in DISTANCE_BINS]
-    GAUSSROWS.append(gaussrow)
-
 
 class MXFPCalculator:
 
-    def __init__(self, dimensionality:str='2D'):
+    def __init__(self, dimensionality:str='2D', max_dist:int=1000) -> None:
         """
         MXFP calculator class
+
+        Parameters 
+        ----------
+        dimensionality : '2D'
+            Default coordinates are 2-dimensional. If you are working with 3-dimensional coordinates then set parameter to '3D'. 
+        
+        max_dist: 1000
+            Maximum atom pair distance found in the molecule. Lower values speed up calculations.
+
         """
         self.distance_bins = DISTANCE_BINS 
         self.mxfp_smarts = MXFP_SMARTS
         self.labels = LABELS
-        self.gaussrows = GAUSSROWS
         self.dimensionality = dimensionality
+        self.max_dist = max_dist
+    
+        gaussrows = []
+        for distance in range(self.max_dist):
+            if distance == 0:
+                gaussrow = [exp(-0.5*(((distance_bin)/(0.09))**2)) for distance_bin in DISTANCE_BINS]
+            else:
+                gaussrow = [exp(-0.5*(((distance_bin-distance)/(distance*0.09))**2)) for distance_bin in DISTANCE_BINS]
+            gaussrows.append(gaussrow)
+        
+        self.gaussrows = gaussrows
 
 
-    def get_propmat(self, mol:'rdchem.Mol') -> np.array:
+    def get_property_matrix(self, mol:rdchem.Mol) -> np.ndarray:
+        """ 
+
+        Parameters 
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            RDKit mol object.
+
+        Returns
+        -------
+        property matrix : np.ndarray 
+            (7 pharmacophore categories) x (number of heavy atoms) matrix.\n 
+            Each heavy atom is represented by a column of 7 binary values,\n
+            which state whether the selected atom possesses the property (1) or does not possess the property (0).
+
         """
-        Calculates which of the pharmacophore features are attributed
-        to the atoms contained in the query molecule.
 
-        Returns a list of the length of number of atoms in the query
-        molecule. The i'th element of the list contains a list of pharmacophore
-        labels (str) assigned to that atom.
-        """
         propmat = np.zeros((len(self.labels), mol.GetNumAtoms()))
 
-        for i, label in enumerate(self.labels):
-            category = self.mxfp_smarts[label]
-            for smarts in category:
-                pattern = Chem.MolFromSmarts(smarts)
-                matched = False
-                for match in mol.GetSubstructMatches(pattern, uniquify=True):
-                    for j in match:
-                        propmat[i, j] = 1
-                    matched = True
-                if matched: break
-            
-        return propmat
+        try: 
+            for i, label in enumerate(self.labels):
+                category = self.mxfp_smarts[label]
+                for smarts in category:
+                    pattern = Chem.MolFromSmarts(smarts)
+                    matched = False
+                    for match in mol.GetSubstructMatches(pattern, uniquify=True):
+                        for j in match:
+                            propmat[i, j] = 1
+                        matched = True
+                    if matched: 
+                        break
+            return propmat
+        except:
+            print("Oopsie! Something went wrong while trying to generate the property matrix.\n"
+                "Have you checked if the input file format and/or the input molecule is valid?")
 
-    def get_aplist(self, mol, property):
+
+    def yield_ap(self, mol:rdchem.Mol, property:int):
         """
-        Determines all atom-pairs belonging to one of the
-        selected pharmacophore category.
 
-        Returns a list of n topological distances (int) for n atom-pairs.
+        Parameters 
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            RDKit mol object.
+        
+        property : int
+            Integer value (0-6) designating the pharmacophore property for which to find all atom pairs. \n
+            0 = Heavy Atom Count (HAC)\n
+            1 = Hydrophobic Atoms (HYD)\n
+            2 = Aromatic Atoms (ARO)\n
+            3 = H-bond Acceptors (HBA)\n
+            4 = H-bond Donors (HBD)\n
+            5 = Positively Charged Atoms (POS)\n
+            6 = Negatively Charged Atoms (NEG)\n
+
+        Returns
+        -------
+         atom pairs : Generator
+            Returns a generator object containing all pairs of atoms displaying the selected pharmacophore property.
+
         """
 
-        propmat = self.get_propmat(mol)
+        propmat = self.get_property_matrix(mol)
 
         if self.dimensionality == '3D':
             distmat = AllChem.Get3DDistanceMatrix(mol)
         else:
             distmat = rdmolops.GetDistanceMatrix(mol)
 
-        for i in range(0, mol.GetNumAtoms()):
-            for j in range(i, mol.GetNumAtoms()):
-                if propmat[property, i] and propmat[property, j] == 1:
-                    yield int(distmat[i, j])
+        try:
+            for i in range(0, mol.GetNumAtoms()):
+                for j in range(i, mol.GetNumAtoms()):
+                    if propmat[property, i] and propmat[property, j] == 1:
+                        yield int(distmat[i, j])
+        except:
+            print(f"Uh-Oh! Couldn't calculate the atom pairs for property {property}")
 
 
-    def get_gausslist(self, mol, property):
-        """
-        Calculates the gaussian value for each atom pair
-        as described in the publication.
-
-        Returns a matrix of n atom pairs and k gaussian values (float).
+    def get_gausslist(self, mol:rdchem.Mol, property:int) -> tuple:
         """
 
-        gausslist = np.array([self.gaussrows[distance] for distance in self.get_aplist(mol, property)])
-        gausssum = np.sum(gausslist.T, axis=0)
+        Parameters 
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            RDKit mol object.
 
-        return gausslist, gausssum
+        property : int
+            Integer value (0-6) designating the pharmacophore property for which to find all atom pairs. \n
+            0 = Heavy Atom Count (HAC)\n
+            1 = Hydrophobic Atoms (HYD)\n
+            2 = Aromatic Atoms (ARO)\n
+            3 = H-bond Acceptors (HBA)\n
+            4 = H-bond Donors (HBD)\n
+            5 = Positively Charged Atoms (POS)\n
+            6 = Negatively Charged Atoms (NEG)\n
 
+        Returns
+        -------
+        gausslist : np.ndarray 
+            (n atom pairs) x (31 Gaussian values for each atom pair) matrix.\n
+            Gaussian values are calculated beforehand.
 
-    def get_natoms(self, mol, property):
+        gaussum : int
+            List containing the sum of the 31 Gaussian values for each atom pair. 
+
         """
-        Calculates the number of atoms belonging to one of 
-        the pharmacophore categories. 
 
-        Returns the number of atoms (int)
+        try: 
+            gausslist = np.array([self.gaussrows[distance] for distance in self.yield_ap(mol, property)])
+            gausssum = np.sum(gausslist.T, axis=0)
+            return gausslist, gausssum
+        except:
+            print(f"Yikes! Couldn't generate the list and the sum of the Gaussian values for property {property}")
+
+
+    def count_atoms(self, mol:rdchem.Mol, property:int) -> int:
         """
 
-        propmat = self.get_propmat(mol)
+        Parameters 
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            RDKit mol object.
 
-        num_atoms = np.count_nonzero(propmat[property] == 1)
+        property : int
+            Integer value (0-6) designating the pharmacophore property for which to find all atom pairs. \n
+            0 = Heavy Atom Count (HAC)\n
+            1 = Hydrophobic Atoms (HYD)\n
+            2 = Aromatic Atoms (ARO)\n
+            3 = H-bond Acceptors (HBA)\n
+            4 = H-bond Donors (HBD)\n
+            5 = Positively Charged Atoms (POS)\n
+            6 = Negatively Charged Atoms (NEG)\n
 
-        return num_atoms
+        Returns
+        -------
+        num_atoms : int 
+            Count of all atoms that possess the selected pharmacophore property.
+
+        """
+
+        propmat = self.get_property_matrix(mol)
+
+        try:
+            num_atoms = np.count_nonzero(propmat[property] == 1)
+            return num_atoms
+        except:
+            print(f"Ooof! Couldn't count the atoms with property {property}")
 
 
-    def calc_property_mxfp(self, mol, property):
+    def calc_property_mxfp(self, mol:rdchem.Mol, property:int) -> np.ndarray:
+        """
 
+        Parameters 
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            RDKit mol object.
+
+        property : int
+            Integer value (0-6) designating the pharmacophore property for which to find all atom pairs. \n
+            0 = Heavy Atom Count (HAC)\n
+            1 = Hydrophobic Atoms (HYD)\n
+            2 = Aromatic Atoms (ARO)\n
+            3 = H-bond Acceptors (HBA)\n
+            4 = H-bond Donors (HBD)\n
+            5 = Positively Charged Atoms (POS)\n
+            6 = Negatively Charged Atoms (NEG)\n
+
+        Returns
+        -------
+        property_mxfp : np.ndarray
+            MXFP values for the selected property (31 values)
+
+        """
+        
         gausslist, gausssum = self.get_gausslist(mol, property)
-        natoms = self.get_natoms(mol, property)
+        natoms = self.count_atoms(mol, property)
 
         property_mxfp = np.zeros(len(self.distance_bins))
 
-        for i in range(len(self.distance_bins)):
-            if natoms != 0:
-                property_mxfp[i] = np.floor((100/(natoms**1.5))*np.sum(gausslist[:, i]/gausssum))
+        try:
+            for i in range(len(self.distance_bins)):
+                if natoms != 0:
+                    property_mxfp[i] = np.floor((100/(natoms**1.5))*np.sum(gausslist[:, i]/gausssum))
+            return property_mxfp
+        except:
+            print(f"Yuck! Something didn't work as expected. Couldn't generate MXFP values for property {property}")
         
-        return property_mxfp
 
-
-    def calc_mxfp(self, mol):
+    def calc_mxfp(self, mol:rdchem.Mol) -> np.ndarray:
         """
-        Calculates the MXFP for one molecule. 
+        Calculates the MXFP for a selected molecule. 
 
-        Returns the MXFP vector of 217 values (int)
+        Parameters 
+        ----------
+        mol : rdkit.Chem.rdchem.Mol
+            RDKit mol object.
+
+        Returns
+        -------
+        mxfp : np.ndarray
+            MXFP for the selected molecule (217 values).
         """
 
-        mxfp = np.concatenate([self.calc_property_mxfp(mol, i) for i in range(len(self.labels))], axis=0)
-        mxfp = mxfp.astype(int)
-    
-        return mxfp
+        try:
+            mxfp = np.concatenate([self.calc_property_mxfp(mol, i) for i in range(len(self.labels))], axis=0)
+            mxfp = mxfp.astype(int)
+            return mxfp
+        except:
+            print("Ouch! Couldn't calculate MXFP for this molecule.")
 
 
-    def get_manyxfp(self, mollist):
+    def calc_manyxfp(self, mollist:list) -> list:
         """
-        Calculates the MXFP for all molecules in a list. 
+        Calculates the MXFP for a list of molecules. 
 
-        Returns a list of MXFP vectors of 217 values (int)
+        Parameters 
+        ----------
+        mollist : list
+            List of RDKit mol objects.
+
+        Returns
+        -------
+        mxfp list : np.ndarray
+           List of MXFP.
         """
 
         manyxfp = [self.calc_mxfp(mol) for mol in mollist]
