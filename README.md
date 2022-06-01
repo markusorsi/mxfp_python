@@ -2,7 +2,7 @@
 
 <img src="https://img.shields.io/pypi/v/mxfp?color=success&label=Version&style=flat-square"/> <img src="https://img.shields.io/badge/Python-3.9-blue?style=flat-square"/> <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square"/>
 
-<br>
+## Theory
 
 MXFP is a 217D fingerprint counting atom-pairs using a fuzzy approach to assign atom-pairs to distance bins.
 
@@ -10,8 +10,6 @@ For the MXFP presented here, we compute exact topological distances between atom
 
 
 The sampled Gaussian values are normalized and added to the MXFP distance bins for the corresponding atom-pair category, and distance bins of each category are normalized to size (see Methods and Equation 1 for details). Sampling atom-pair Gaussians at exponentially increasing distances allows to describe molecules up to a very large size using only a limited number of dimensions in the atom pair fingerprint. The approach furthermore partly erases differences between atom pairs separated by a similar number of bonds at large distances, which favors the perception of global molecular shape over structural detail.
-
-<br>
 
 ## Getting started
 
@@ -23,13 +21,9 @@ You will need following prerequisites:
 * [NumPy](https://numpy.org)
 * [RDKit](https://www.rdkit.org)
 
-<br>
-
 ## Installing MXFP
 
 There are several ways in which you can get started using MXFP:
-
-<br>
 
 ### **Installing via GitHub**
 
@@ -38,8 +32,6 @@ To have local copy of the project clone the GitHub repository as follows:
 ```console
 git clone https://github.com/reymond-group/mxfp_python.git
 ```
-
-<br>
 
 ### **Installing via Conda**
 
@@ -53,8 +45,6 @@ conda env create -f mxfp.yml
 conda activate mxfp
 ```
 
-<br>
-
 ### **Installing via pip**
 
 To install mxfp on an existing Conda environment activate the environment and install mxfp via pip using following commands:
@@ -66,11 +56,10 @@ conda activate myenv
 ```console
 pip install mxfp
 ```
-<br>
 
 ## Using MXFP
 
-In your python script:
+In your Python script or Jupyter cell:
 
 1. Import the required libraries (RDKit, MXFP)
 2. Convert SMILES to rdchem.Mol object with RDKit
