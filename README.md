@@ -1,8 +1,6 @@
 # **MXFP** (**M**acromolecule e**X**tended **F**inger**P**rint)
 
-<img src="https://img.shields.io/pypi/v/mxfp?color=success&label=Version&style=flat-square"/>
-<img src="https://img.shields.io/badge/Python-3.9-blue?style=flat-square"/>
-<img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square"/>
+<img src="https://img.shields.io/pypi/v/mxfp?color=success&label=Version&style=flat-square"/> <img src="https://img.shields.io/badge/Python-3.9-blue?style=flat-square"/> <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square"/>
 
 <br>
 
