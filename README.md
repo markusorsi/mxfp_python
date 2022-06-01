@@ -25,7 +25,7 @@ You will need following prerequisites:
 
 There are several ways in which you can get started using MXFP:
 
-### **Installing via GitHub**
+#### **Installing via GitHub**
 
 To have local copy of the project clone the GitHub repository as follows:
 
@@ -33,7 +33,7 @@ To have local copy of the project clone the GitHub repository as follows:
 git clone https://github.com/reymond-group/mxfp_python.git
 ```
 
-### **Installing via Conda**
+#### **Installing via Conda**
 
 To create a ready to use Conda environment download the mxfp.yml file from the repository and run following commands:
 
@@ -45,7 +45,7 @@ conda env create -f mxfp.yml
 conda activate mxfp
 ```
 
-### **Installing via pip**
+#### **Installing via pip**
 
 To install mxfp on an existing Conda environment activate the environment and install mxfp via pip using following commands:
 
