@@ -1,15 +1,32 @@
 # **MXFP** (**M**acromolecule e**X**tended **F**inger**P**rint)
 
-<img src="https://img.shields.io/pypi/v/mxfp?color=success&label=Version&style=flat-square"/> <img src="https://img.shields.io/badge/Python-3.9-blue?style=flat-square"/> <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square"/>
+<img src="https://img.shields.io/pypi/v/mxfp?color=success&label=Version&style=flat-square"/> <img src="https://img.shields.io/badge/Python-3.6-blue?style=flat-square"/> <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square"/>
 
 ## Theory
 
-MXFP is a 217D fingerprint counting atom-pairs using a fuzzy approach to assign atom-pairs to distance bins.
+MXFP (Macromolecule eXtenden FingerPrint) is a 217D fuzzy fingerprint that encodes atom pairs of 7 pharmacophore groups and is suitable for the comparison of large molecules and scaffold hopping. In a first step, every atom is assigned to one or more of following pharmacophore categories:
 
-For the MXFP presented here, we compute exact topological distances between atoms, which is suitable for any molecule. Furthermore, we use seven atom categories by additionally computing aromatic (AR), H-bond donor (HBD), and H-bond acceptor atoms (HBA), which are important to differentiate molecules such as polycyclic aromatic hydrocarbons, oligosaccharides, and oligonucleotides. As for 3DP and 2DP, we do not consider cross-category atom pairs in MXFP. Each atom pair is converted to a Gaussian of 18 % width centered at the atom pair topological distance, which is the shortest path between the two atoms counted in bonds. This Gaussian is then sampled at 31 distances d<sub>i</sub> spanning from d<sub>0</sub> = 0 to d<sub>30</sub> = 317.8 bonds at exponentially increasing intervals. 
+1. Heavy Atoms (HAC)
+2. Hydrophobic Atoms (HYD)
+3. Aromatic Atoms (ARO)
+4. H-bond Acceptors (HBA)
+5. H-bond Donors (HBD)
+6. Positively Charged Atoms (POS)
+7. Negatively Charged Atoms (NEG)
 
+For each pharmacophore category, all possible atom pairs are determined and converted to a Gaussian of 18% width centered at the atom pair topological (2D) or Euclidean (3D) distance. This Gaussian is then sampled at 31 distance bins $(d_{i})$ spanning from $d_{0} = 0$ to $d_{30} = 317.8$ bonds at exponentially increasing intervals. The Gaussian value $g_{jk}(d_{i})$ of atom pair with distance $d_{jk}$ for distance bin $d_{i}$ is calculated as follows:
 
-The sampled Gaussian values are normalized and added to the MXFP distance bins for the corresponding atom-pair category, and distance bins of each category are normalized to size (see Methods and Equation 1 for details). Sampling atom-pair Gaussians at exponentially increasing distances allows to describe molecules up to a very large size using only a limited number of dimensions in the atom pair fingerprint. The approach furthermore partly erases differences between atom pairs separated by a similar number of bonds at large distances, which favors the perception of global molecular shape over structural detail.
+$$ g_{jk}(d_{i}) = e^{- \frac{1}{2}(\frac{d_{i} - d_{jk}}{d_{jk}*0.09})^2} $$
+
+Each of the obtained 31 gaussian values is normalized to the sum of all 31 values, $s_{jk}$, so that every atom pair contributes equally to the fingerprint.
+
+$$ s_{jk}  = \sum_{i = 0}^{30} g_{jk}(d_{i}) $$
+
+The sum of normalized gaussian contributions from all atom pairs of one pharmacophore category at distance $d_{i}$ is normalized by the total number of atoms in that category $N_{c}$ to the power 1.5 to reduce the sensitivity of the fingerprint to molecule size, multiplied by 100 and rounded to unity to give the final fingerprint bit value $v_{ci}$.
+
+$$ v_{ci} = \frac{100}{N_{c}^{1.5}} \sum_{j = 1} \sum_{k = 1} \frac{g_{jk}(d_{i})}{s_{jk}}$$ 
+
+The 31 fingerprint bit values from each of the 7 atom categories are finally joined, yielding the 217D fingerprint vector.
 
 ## Getting started
 
@@ -17,7 +34,7 @@ The sampled Gaussian values are normalized and added to the MXFP distance bins f
 
 You will need following prerequisites: 
 
-* [Python 3.9](https://www.python.org)
+* [Python 3.6](https://www.python.org)
 * [NumPy](https://numpy.org)
 * [RDKit](https://www.rdkit.org)
 
@@ -62,25 +79,32 @@ pip install mxfp
 In your Python script or Jupyter cell:
 
 1. Import the required libraries (RDKit, MXFP)
-2. Convert SMILES to rdchem.Mol object with RDKit
+2. Convert SMILES to rdchem.Mol object with RDKit (optional)
 3. Initialize the MXFPCalculator class
-4. Calculate MXFP of your molecule
+4. Calculate MXFP of your molecule either from rchem.Mol object or directly from SMILES
 
 ```python
 #Import the required libraries (RDKit, MXFP)
 from rdkit import Chem
 from mxfp import mxfp
 
-#Convert SMILES to rdchem.Mol object with RDKit
+#Convert SMILES to rdchem.Mol object with RDKit (optional)
 polymyxin_b2_smiles = 'C[C@H]([C@H]1C(=O)NCC[C@@H](C(=O)N[C@H](C(=O)N[C@@H](C(=O)N[C@H](C(=O)N[C@H](C(=O)N[C@H](C(=O)N1)CCN)CCN)CC(C)C)CC2=CC=CC=C2)CCN)NC(=O)[C@H](CCN)NC(=O)[C@H]([C@@H](C)O)NC(=O)[C@H](CCN)NC(=O)CCCCC(C)C)O'
 polymyxin_b2_mol = Chem.MolFromSmiles(polymyxin_b2_smiles)
 
 #Initialize the MXFPCalculator class
 MXFP = mxfp.MXFPCalculator()
 
-#Calculate MXFP of your molecule
-polymyxin_b2_mxfp = MXFP.calc_mxfp(polymyxin_b2_mol)
-print(polymyxin_b2_mxfp)
+#Calculate MXFP of your molecule either from rchem.Mol object or directly from SMILES
+polymyxin_b2_mxfp = MXFP.mxfp_from_mol(polymyxin_b2_mol) #from rdchem.Mol object
+polymyxin_b2_mxfp = MXFP.mxfp_from_smiles(polymyxin_b2_smiles) #from SMILES
+```
+
+If you are working with 3D coordinates and wish to use Euclidean atom-pair distances instead of topological distances, initialize the MXFPCalculator class using the dimensionality='3D' parameter. 
+
+```python
+#Initialize the MXFPCalculator class
+MXFP = mxfp.MXFPCalculator(dimensionality='3D')
 ```
 
 ## License
