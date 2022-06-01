@@ -242,7 +242,7 @@ class MXFPCalculator:
             print(f"Yuck! Something didn't work as expected. Couldn't generate MXFP values for property {property}")
         
 
-    def calc_mxfp(self, mol:rdchem.Mol) -> np.ndarray:
+    def mxfp_from_mol(self, mol:rdchem.Mol) -> np.ndarray:
         """
         Calculates the MXFP for a selected molecule. 
 
@@ -265,21 +265,25 @@ class MXFPCalculator:
             print("Ouch! Couldn't calculate MXFP for this molecule.")
 
 
-    def calc_manyxfp(self, mollist:list) -> list:
-        """
-        Calculates the MXFP for a list of molecules. 
+    def mxfp_from_smiles(self, smiles:str) -> np.ndarray:
+            """
+            Calculates the MXFP for a selected molecule. 
 
-        Parameters 
-        ----------
-        mollist : list
-            List of RDKit mol objects.
+            Parameters 
+            ----------
+            smiles : str
+                A SMILES string of .
 
-        Returns
-        -------
-        mxfp list : np.ndarray
-           List of MXFP.
-        """
+            Returns
+            -------
+            mxfp : np.ndarray
+                MXFP for the selected molecule (217 values).
+            """
 
-        manyxfp = [self.calc_mxfp(mol) for mol in mollist]
-
-        return manyxfp
+            try:
+                mol = Chem.MolFromSmiles(smiles)
+                mxfp = np.concatenate([self.calc_property_mxfp(mol, i) for i in range(len(self.labels))], axis=0)
+                mxfp = mxfp.astype(int)
+                return mxfp
+            except:
+                print("Ouch! Couldn't calculate MXFP for this molecule. Have you checked if the SMILES string is valid?")
