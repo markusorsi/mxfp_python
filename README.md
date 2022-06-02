@@ -14,7 +14,7 @@ MXFP (Macromolecule eXtenden FingerPrint) is a 217D fuzzy fingerprint that encod
 6. Positively Charged Atoms (POS)
 7. Negatively Charged Atoms (NEG)
 
-For each pharmacophore category, all possible atom pairs are determined and converted to a Gaussian of 18% width centered at the atom pair topological (2D) or Euclidean (3D) distance. This Gaussian is then sampled at 31 distance bins $(d_{i})$ spanning from $d_{0} = 0$ to $d_{30} = 317.8$ bonds at exponentially increasing intervals. The Gaussian value $g_{jk}(d_{i})$ of atom pair with distance $d_{jk}$ for distance bin $d_{i}$ is calculated as follows:
+For each pharmacophore category, all possible atom pairs are determined and converted to a Gaussian of 18% width centered at the atom pair topological (2D) or Euclidean (3D) distance. This Gaussian is then sampled at 31 distance bins $(d_{i})$ spanning from $d_{0} = 0$ to $d_{30} = 317.8$ bonds at exponentially increasing intervals. The Gaussian value $g_{jk}(d_{i})$ of atom pair with distance $d_{jk}$ between two atoms for distance bin $d_{i}$ is calculated as follows:
 
 $$ g_{jk}(d_{i}) = e^{- \frac{1}{2}(\frac{d_{i} - d_{jk}}{d_{jk}*0.09})^2} $$
 
@@ -44,7 +44,7 @@ There are several ways in which you can get started using MXFP:
 
 #### **Installing via GitHub**
 
-To have local copy of the project clone the GitHub repository as follows:
+To obtain a local copy of the project clone the GitHub repository as follows:
 
 ```console
 git clone https://github.com/reymond-group/mxfp_python.git
@@ -67,7 +67,7 @@ conda activate mxfp
 To install mxfp on an existing Conda environment activate the environment and install mxfp via pip using following commands:
 
 ```console
-conda activate myenv
+conda activate my_environment
 ```
 
 ```console
@@ -100,7 +100,7 @@ polymyxin_b2_mxfp = MXFP.mxfp_from_mol(polymyxin_b2_mol) #from rdchem.Mol object
 polymyxin_b2_mxfp = MXFP.mxfp_from_smiles(polymyxin_b2_smiles) #from SMILES
 ```
 
-If you are working with 3D coordinates and wish to use Euclidean atom-pair distances instead of topological distances, initialize the MXFPCalculator class using the dimensionality='3D' parameter. 
+If you are working with 3D coordinates and wish to use Euclidean atom-pair distances instead of topological distances, initialize the MXFPCalculator class using the dimensionality='3D' parameter. Mind that you will not be able to calculate MXFP from a SMILES string if you use the '3D' option, so you need to provide an rdchem.Mol object.
 
 ```python
 #Initialize the MXFPCalculator class
