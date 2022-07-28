@@ -19,12 +19,9 @@ MXFP_SMARTS = {
 'NEG' : ['[*-]'],
 }
 
-LABELS = MXFP_SMARTS.keys()
-
-
 class MXFPCalculator:
 
-    def __init__(self, dimensionality:str='2D', max_dist:int=1000) -> None:
+    def __init__(self, dimensionality:str='2D', max_dist:int=1000, categories:list=['HAC', 'HYD', 'ARO', 'HBA', 'HBD', 'POS', 'NEG']) -> None:
         """
         MXFP calculator class
 
@@ -39,9 +36,9 @@ class MXFPCalculator:
         """
         self.distance_bins = DISTANCE_BINS 
         self.mxfp_smarts = MXFP_SMARTS
-        self.labels = LABELS
         self.dimensionality = dimensionality
         self.max_dist = max_dist
+        self.labels = categories
     
         gaussrows = []
         for distance in range(self.max_dist):
@@ -52,7 +49,6 @@ class MXFPCalculator:
             gaussrows.append(gaussrow)
         
         self.gaussrows = gaussrows
-
 
     def get_property_matrix(self, mol:rdchem.Mol) -> np.ndarray:
         """ 

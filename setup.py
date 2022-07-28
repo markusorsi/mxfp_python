@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.1.1' 
+VERSION = '1.1.2' 
 DESCRIPTION = 'MXFP'
 LONG_DESCRIPTION = 'Open-source version of MXFP based on the RDKit.'
 
